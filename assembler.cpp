@@ -2,6 +2,7 @@
 // eren, orion, kai, dawn
 // working our assembly off
 
+namespace std
 #include "rv32i.h"
 #include <bitset>
 #include <fstream>
