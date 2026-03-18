@@ -39,7 +39,7 @@ module hazard_detect(
     input wire [4:0] iIFIdRegisterRs2, 
     output reg oPCWrite,
     output reg oIFIDWrite,
-    output reg oControlMuxZero // 1 -> stall (for bubble), 0 -> continue
+    output reg ID_EX_Flush // 1 -> stall (for bubble), 0 -> continue
 );
 
     always @(*) begin
@@ -48,12 +48,12 @@ module hazard_detect(
             // stall!! insert bubbles!!!
             oPCWrite = 1'b0;
             oIFIDWrite = 1'b0;
-            oControlMuxZero = 1'b1; // trigger the mux to do so
+            ID_EX_Flush = 1'b1; // trigger the flush signal
         end else begin
             // normal otherwise :3
             oPCWrite = 1'b1;
             oIFIDWrite = 1'b1;
-            oControlMuxZero = 1'b0; 
+            ID_EX_Flush = 1'b0; 
         end
     end
 endmodule
