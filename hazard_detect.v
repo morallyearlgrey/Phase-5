@@ -31,58 +31,29 @@
         ForwardB = 10 -> Source: EX/MEM -> Second ALU operand forwarded from prior ALU result
 
 */
+
 module hazard_detect(
-    input wire iEXMemRegWrite,
-    input wire [4:0] iEXMemRegisterRd,
-    input wire [4:0] iIDExRegisterRs1,
-    input wire [4:0] iIDExRegisterRs2,
-    input wire iMemWbRegWrite,
-    input wire [4:0] iMemWbRegisterRd,
-    output reg [1:0] oForwardA,
-    output reg [1:0] oForwardB
+    input wire iIDExMemRead, // true iff instruction in EX is load type
+    input wire [4:0] iIDExRegisterRd, 
+    input wire [4:0] iIFIdRegisterRs1, 
+    input wire [4:0] iIFIdRegisterRs2, 
+    output reg oPCWrite,
+    output reg oIFIDWrite,
+    output reg oControlMuxZero // 1 -> stall (for bubble), 0 -> continue
 );
 
     always @(*) begin
-
-        // ------------- EX HAZARD DETECTION -------------
-
-        // EX hazard detection for ForwardA
-        if (iEXMemRegWrite && (iEXMemRegisterRd != 0) && (iEXMemRegisterRd == iIDExRegisterRs1)) begin
-            oForwardA = 2'b10; // Forward from EX/MEM
-        end else if (iMemWbRegWrite && (iMemWbRegisterRd != 0) && (iMemWbRegisterRd == iIDExRegisterRs1)) begin
-            oForwardA = 2'b01; // Forward from MEM/WB
+        // Check for Load-Use Hazard
+        if (iIDExMemRead && ((iIDExRegisterRd == iIFIdRegisterRs1) || (iIDExRegisterRd == iIFIdRegisterRs2))) begin
+            // stall!! insert bubbles!!!
+            oPCWrite = 1'b0;
+            oIFIDWrite = 1'b0;
+            oControlMuxZero = 1'b1; // trigger the mux to do so
         end else begin
-            oForwardA = 2'b00; // No hazard
-        end
-
-        // EX hazard detection for ForwardB
-        if (iEXMemRegWrite && (iEXMemRegisterRd != 0) && (iEXMemRegisterRd == iIDExRegisterRs2)) begin
-            oForwardB = 2'b10; // Forward from EX/MEM
-        end else if (iMemWbRegWrite && (iMemWbRegisterRd != 0) && (iMemWbRegisterRd == iIDExRegisterRs2)) begin
-            oForwardB = 2'b01; // Forward from MEM/WB
-        end else begin
-            oForwardB = 2'b00; // No hazard
-        end
-
-        // ------------- MEM HAZARD DETECTION -------------
-        
-        // MEM hazard detection for ForwardA
-        if (iMemWbRegWrite && (iMemWbRegisterRd != 0) && 
-            !(iEXMemRegWrite && (iEXMemRegisterRd != 0) && 
-                (iEXMemRegisterRd == iIDExRegisterRs1))
-            && (iMemWbRegisterRd == iIDExRegisterRs1)) begin
-            oForwardA = 2'b01; // Forward from MEM/WB
-        end else begin
-            oForwardA = 2'b00; // No hazard
-        end
-
-        // MEM hazard detection for ForwardB
-        if (iMemWbRegWrite && (iMemWbRegisterRd != 0) && 
-            !(iEXMemRegWrite && (iEXMemRegisterRd != 0) && 
-                (iEXMemRegisterRd == iIDExRegisterRs2)) && 
-            (iMemWbRegisterRd == iIDExRegisterRs2)) begin
-            oForwardB = 2'b01; // Forward from MEM/WB
-        end else begin
-            oForwardB = 2'b00; // No hazard
+            // normal otherwise :3
+            oPCWrite = 1'b1;
+            oIFIDWrite = 1'b1;
+            oControlMuxZero = 1'b0; 
         end
     end
+endmodule
