@@ -2,13 +2,17 @@
 // eren, orion, kai, dawn
 // working our assembly off
 
-namespace std
 #include "rv32i.h"
+#include <_types/_uint32_t.h>
 #include <bitset>
 #include <fstream>
+#include <ios>
 #include <iostream>
 #include <type_traits>
 #include <unordered_map>
+
+#include <vector> 
+#include <iomanip> 
 
 std::string processRType(std::string line, const Instruction* instruction);
 
@@ -27,12 +31,13 @@ uint32_t parseImmediate(const std::string immediate);
 int getRegisterAddressSafe(const std::string& registerName);
 static std::unordered_map<std::string, int32_t> SymbolTable;
 int PC;
+void writeLittleEndian(std::ofstream& file, uint32_t val);
 
 int main(int argc, char* argv[]) {
     if (argc != 3) return 1;
 
-    std::string basePath = argv[1];
-    std::string fullInputPath = argv[2];
+    std::string fullInputPath = argv[1];
+    std::string basePath = argv[2];
 
     // ensure basePath ends with '/'
     if (!basePath.empty() && basePath.back() != '/') {
@@ -40,18 +45,20 @@ int main(int argc, char* argv[]) {
     }
 
     // extract filename from full path
-    std::string file_name = fullInputPath;
-    size_t lastSlash = file_name.rfind('/');
-    if (lastSlash != std::string::npos) {
-        file_name = file_name.substr(lastSlash + 1);
-    }
+    // std::string file_name = fullInputPath;
+    // size_t lastSlash = file_name.rfind('/');
+    // if (lastSlash != std::string::npos) {
+    //     file_name = file_name.substr(lastSlash + 1);
+    // }
 
-    // remove .s extension (last 2 characters)
-    file_name = file_name.erase(file_name.length() - 2, 2);
+    // // remove .s extension (last 2 characters)
+    // file_name = file_name.erase(file_name.length() - 2, 2);
 
     // create output file paths
-    std::string outputBinPath = basePath + file_name + ".bin";
-    std::string outputHexPath = basePath + file_name + ".hex.txt";
+    // std::string outputBinPath = basePath + file_name + ".bin";
+    // std::string outputHexPath = basePath + file_name + ".hex.txt";
+    std::string instrPath = basePath + "instr.txt";
+    std::string dataPath = basePath +  "data.txt";
 
     firstPass(fullInputPath);
 
@@ -60,8 +67,9 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    std::ofstream binaryFile(outputBinPath);
-    std::ofstream hexFile(outputHexPath);
+    std::ofstream instrFile(instrPath);
+    std::ofstream dataFile(dataPath);
+
     std::string line;  
     int lineNum = 0;
     PC = 0; 
@@ -95,6 +103,10 @@ int main(int argc, char* argv[]) {
             continue;
         }
         if (token == ".word") {
+            std::string word;
+            ss >> word;
+            uint32_t val = parseImmediate(word);
+            writeLittleEndian(dataFile, val);
             PC += 4;  
             continue;
         }
@@ -163,34 +175,47 @@ int main(int argc, char* argv[]) {
 
         // for the files, make sure it's all good, no errors
         if(!label.empty() && label.length() == 32) {
-            if(binaryFile.is_open()) {
-
-                binaryFile << label << std::endl;
-
-            }
-
-
-            // output to binary and hex files
             uint32_t binaryDecimalForm = std::bitset<32>(label).to_ulong();
-            std::string hexForm = binaryToHex(binaryDecimalForm);
+            writeLittleEndian(instrFile, binaryDecimalForm);
 
-            if(hexFile.is_open()) {
+            // if(binaryFile.is_open()) {
 
-                hexFile << "0x" + hexForm << std::endl;
+            //     binaryFile << label << std::endl;
 
-            }
+            // }
+
+
+            // // output to binary and hex files
+            // uint32_t binaryDecimalForm = std::bitset<32>(label).to_ulong();
+            // std::string hexForm = binaryToHex(binaryDecimalForm);
+
+            // if(hexFile.is_open()) {
+
+            //     hexFile << "0x" + hexForm << std::endl;
+
+            // }
 
         }
 
   }
 
-
+  writeLittleEndian(dataFile, 0x00100073);
+  
   // close
-  binaryFile.close();
-  hexFile.close();
+  dataFile.close();
+  instrFile.close();
   inputFile.close();
 
   return 0;
+}
+
+void writeLittleEndian(std::ofstream& file, uint32_t val) {
+    for(int i=0; i<4; i++) {
+        uint8_t byte = ((val >> (i*8)) & 0xFF);
+        file << "0x" << std::uppercase << std::hex << std::setw(2) << std::setfill('0') << (int)byte << "\n";
+
+    }
+
 }
 
 // helpful map, was used for i type func orig when merging
@@ -605,6 +630,10 @@ uint32_t parseImmediate(const std::string immediate) {
 
     }
 
+    if (immediate.find("0x") == 0 || immediate.find("0X") == 0) {
+        return std::stoul(immediate, nullptr, 16);
+    }
+
     return std::stoi(immediate); 
 
 }
@@ -640,6 +669,7 @@ void firstPass(std::string filename) {
 			continue;
 		}
 		if (token == ".text") {
+            currentAddress=0x0;
 			continue;
 		}
 		if (token == ".word") {
