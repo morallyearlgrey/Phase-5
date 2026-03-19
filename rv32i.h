@@ -10,6 +10,18 @@
 #include <sstream>
 
 
+/*
+things to do:
+- return two files of hex values, instr.txt and data.txt
+- both files should store a byte per line and use little endian (0x00AD7318 -> 0x18, 0x73, 0xAD, 0x00)
+
+output:
+- instr.txt has encoded instruction commands (with the little endians)
+- data.txt has word data initially stored in data
+- end each file with an ebreak signal, urrently in each assembly file that is input for assembler
+- should decode to 0x00100073
+*/
+
 enum class InstructionType { R, I, S, B, U, J };
 
 struct Instruction {
