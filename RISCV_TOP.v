@@ -193,6 +193,8 @@ module RISCV_TOP (
   wire [4:0] wMEM_Rd, wWB_Rd;
   wire wMEM_RegWrite, wWB_RegWrite, wMEM_MemRd, wWB_MemRd;
   wire [31:0] wMEM_AluResult, wWB_FinalWriteData;
+  wire [4:0] wMEM_Rs2Ptr;
+  wire wWB_MemtoReg;
 
   ForwardingUnit forward_unit (
     .ID_EX_rs1(wEX_Rs1),
@@ -201,7 +203,8 @@ module RISCV_TOP (
     .MEM_WB_rd(wWB_Rd),
     .EX_MEM_RegWrite(wMEM_RegWrite),
     .MEM_WB_RegWrite(wWB_RegWrite),
-    .EX_MEM_rs2(wEX_Rs2), // Passing current RS2 for store-after-load forwarding
+    .EX_MEM_rs2(wMEM_Rs2Ptr),
+    .MEM_WB_MemToReg(wWB_MemtoReg),
     .MEM_WB_MemRead(wWB_MemRd),
     .ForwardA(wForwardA),
     .ForwardB(wForwardB),
@@ -264,7 +267,7 @@ module RISCV_TOP (
   assign wBranchTaken = (wEX_Branch && wAluZero) || wEX_Jump;
   
   // PC Update Logic: Normal = PC + 4, Branch/Jump = BranchTarget
-  assign wActualNextPC = (wBranchTaken) ? wEX_BranchTarget : (~wPCWrite) ? wIF_PC : (wIF_PC + 32'd4); // Keep PC the same if stalling
+    assign wActualNextPC = (wBranchTaken) ? wEX_BranchTarget : (~wPCWrite) ? wIF_PC : (wIF_PC + 32'd4); // Keep PC the same if stalling
                                          
 
 
@@ -290,6 +293,7 @@ module RISCV_TOP (
     .i_zero(wAluZero),
     .i_offset(wEX_Imm),
     .i_rs2_value(wAluSrcB_raw),
+    .i_rs2_ptr(wEX_Rs2),
     .i_funct3(wEX_Funct3),
     .i_rd_num(wEX_Rd),
     .i_base_pc(wEX_PC + 4),
@@ -304,6 +308,7 @@ module RISCV_TOP (
     .o_zero(wMEM_Zero),
     .o_offset(wMEM_Offset),
     .o_rs2_value(wMEM_Rs2Data),
+    .o_rs2_ptr(wMEM_Rs2Ptr),
     .o_funct3(wMEM_Funct3),
     .o_rd_num(wMEM_Rd),
     .o_base_pc(wMEM_PcPlus4),
@@ -319,11 +324,14 @@ module RISCV_TOP (
   // 4. MEM Stage (Memory Access)
   // ==========================================================================
   wire [31:0] wMEM_ReadData;
+  wire [31:0] wStoreData;
+  assign wStoreData = (wForwardMem) ? wWB_FinalWriteData : wMEM_Rs2Data;
+
   MEM_STAGE mem_stage (
     .iClk(iClk),
     .iRstN(iRstN),
     .iAddress(wMEM_AluResult),
-    .iWriteData(wMEM_Rs2Data),
+    .iWriteData(wStoreData),
     .iFunct3(wMEM_Funct3),
     .iMemWrite(wMEM_MemWr),
     .iMemRead(wMEM_MemRd),
@@ -334,7 +342,7 @@ module RISCV_TOP (
   // ==========================================================================
   // Pipeline Register: MEM/WB
   // ==========================================================================
-  wire wWB_MemtoReg, wWB_Jump, wWB_Lui;
+  wire wWB_Jump, wWB_Lui;
   wire [31:0] wWB_MemData, wWB_AluResult, wWB_Imm, wWB_PcPlus4;
 
   MEM_WB reg_mem_wb (
@@ -344,6 +352,7 @@ module RISCV_TOP (
     .iRegWrite(wMEM_RegWrite),
     .iJump(wMEM_Jump),
     .iLui(wMEM_Lui),
+    .iMemRead(wMEM_MemRd),
     .i_mem_data(wMEM_ReadData),
     .i_ALU_result(wMEM_AluResult),
     .i_rd_num(wMEM_Rd),
@@ -354,6 +363,7 @@ module RISCV_TOP (
     .oRegWrite(wWB_RegWrite),
     .oJump(wWB_Jump),
     .oLui(wWB_Lui),
+    .oMemRead(wWB_MemRd),
     .o_mem_data(wWB_MemData),
     .o_ALU_result(wWB_AluResult),
     .o_rd_num(wWB_Rd),
