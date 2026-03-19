@@ -9,6 +9,8 @@ module EX_MEM(
     input  wire        iRegWrite,
     input  wire        iBranch,
     input  wire        iJump,
+    input  wire        iLui,
+    input  wire [31:0] i_imm,
 
     // Data signals
     input  wire [31:0] i_ALU_result,   // ALU output
@@ -26,6 +28,8 @@ module EX_MEM(
     output reg         oRegWrite,
     output reg         oBranch,
     output reg         oJump,
+    output reg         oLui,
+    output reg [31:0]  o_imm,
 
     output reg [31:0]  o_ALU_result,
     output reg         o_zero,
@@ -42,8 +46,9 @@ always @(posedge clk) begin
         oMemWrite    <= 1'b0;
         oMemToReg    <= 1'b0;
         oRegWrite    <= 1'b0;
-        oBranch      <= 1'b0;
         oJump        <= 1'b0;
+        oLui         <= 1'b0;
+        o_imm        <= 32'b0;
 
         o_ALU_result <= 32'b0;
         o_zero       <= 1'b0;
@@ -60,6 +65,8 @@ always @(posedge clk) begin
         oRegWrite    <= iRegWrite;
         oBranch      <= iBranch;
         oJump        <= iJump;
+        oLui         <= iLui;
+        o_imm        <= i_imm;
 
         o_ALU_result <= i_ALU_result;
         o_zero       <= i_zero;

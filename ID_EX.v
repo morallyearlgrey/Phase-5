@@ -15,6 +15,7 @@ module ID_EX(
     input  wire        iRegWrite,
     input  wire        iBranch,
     input  wire        iJump,
+    input  wire        iLui,
 
     // Extra inputs
     input  wire [31:0] i_rs1_value,
@@ -38,6 +39,7 @@ module ID_EX(
     output reg         oRegWrite,
     output reg         oBranch,
     output reg         oJump,
+    output reg         oLui,
 
     output reg [31:0]  o_rs1_value,
     output reg [31:0]  o_rs2_value,
@@ -63,6 +65,7 @@ always @(posedge clk) begin
         oRegWrite   <= 1'b0;
         oBranch     <= 1'b0;
         oJump       <= 1'b0;
+        oLui        <= 1'b0;
 
         o_rs1_value <= 32'b0;
         o_rs2_value <= 32'b0;
@@ -85,6 +88,7 @@ always @(posedge clk) begin
         oRegWrite   <= iRegWrite;
         oBranch     <= iBranch;
         oJump       <= iJump;
+        oLui        <= iLui;
 
         o_rs1_value <= i_rs1_value;
         o_rs2_value <= i_rs2_value;
