@@ -55,10 +55,16 @@ module DECODER (
                 rImm = {{11{iInstr[31]}}, iInstr[31], iInstr[19:12], iInstr[20], iInstr[30:21], 1'b0};
             end
 
+            // SYSTEM (ebreak, ecall)
+            7'b1110011: begin
+                rImm = {{20{iInstr[31]}}, iInstr[31:20]}; // Same as I-type
+            end
+
             // R-type or unknown
             default: begin
                 rImm = 32'b0;
             end
+
         endcase
     end
 

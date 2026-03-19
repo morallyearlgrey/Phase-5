@@ -20,6 +20,7 @@ module EX_MEM(
     input  wire [2:0]  i_funct3,
     input  wire [4:0]  i_rd_num,
     input  wire [31:0] i_base_pc,      // PC or rs1, already selected in EX
+    input  wire        iFinish,
 
     // Outputs to MEM stage
     output reg         oMemRead,
@@ -37,8 +38,10 @@ module EX_MEM(
     output reg [31:0]  o_rs2_value,
     output reg [2:0]   o_funct3,
     output reg [4:0]   o_rd_num,
-    output reg [31:0]  o_base_pc
+    output reg [31:0]  o_base_pc,
+    output reg         oFinish
 );
+
 
 always @(posedge clk) begin
     if (rst) begin
@@ -57,6 +60,7 @@ always @(posedge clk) begin
         o_funct3     <= 3'b000;
         o_rd_num     <= 5'b00000;
         o_base_pc    <= 32'b0;
+        oFinish      <= 1'b0;
     end
     else begin
         oMemRead     <= iMemRead;
@@ -75,7 +79,9 @@ always @(posedge clk) begin
         o_funct3     <= i_funct3;
         o_rd_num     <= i_rd_num;
         o_base_pc    <= i_base_pc;
+        oFinish      <= iFinish;
     end
 end
+
 
 endmodule

@@ -14,6 +14,7 @@ module MEM_WB(
     input  wire [4:0]  i_rd_num,
     input  wire [31:0] i_imm,
     input  wire [31:0] i_pc_plus_4,
+    input  wire        iFinish,
 
     // Output to WB stage
     output reg         oMemToReg,
@@ -25,7 +26,8 @@ module MEM_WB(
     output reg [31:0]  o_ALU_result,
     output reg [4:0]   o_rd_num,
     output reg [31:0]  o_imm,
-    output reg [31:0]  o_pc_plus_4
+    output reg [31:0]  o_pc_plus_4,
+    output reg         oFinish
 );
 
 always @(posedge clk) begin
@@ -40,6 +42,7 @@ always @(posedge clk) begin
         o_rd_num     <= 5'b00000;
         o_imm        <= 32'b0;
         o_pc_plus_4  <= 32'b0;
+        oFinish      <= 1'b0;
     end
     else begin
         oMemToReg    <= iMemToReg;
@@ -52,6 +55,7 @@ always @(posedge clk) begin
         o_rd_num     <= i_rd_num;
         o_imm        <= i_imm;
         o_pc_plus_4  <= i_pc_plus_4;
+        oFinish      <= iFinish;
     end
 end
 

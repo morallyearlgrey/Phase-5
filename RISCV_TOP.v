@@ -1,21 +1,26 @@
 module RISCV_TOP (
     input iClk,
-    input iRstN
+    input iRstN,
+    output oFinish // Added to signal end of simulation
   );
+
+  // Autograder signals
+  wire [31:0] wInstr, wPc;
 
   // ==========================================================================
   // 1. IF Stage (Instruction Fetch)
   // ==========================================================================
-  wire [31:0] wNextPC, wIF_PC, wIF_Instr;
+  wire [31:0] wActualNextPC, wIF_PC, wIF_Instr;
   reg  [31:0] rPC;
   wire wPCWrite, wIFIDWrite;
 
   always @(posedge iClk or negedge iRstN) begin
     if (~iRstN) rPC <= 32'h0;
-    else if (wPCWrite) rPC <= wNextPC;
+    else if (wPCWrite) rPC <= wActualNextPC;
   end
 
   assign wIF_PC = rPC;
+  assign wPc    = wIF_PC; // Signal for autograder
 
   INSTRUCTION_MEMORY instr_mem (
     .iRdAddr(wIF_PC),
@@ -38,6 +43,9 @@ module RISCV_TOP (
     .o_PC(wID_PC),
     .o_instruction(wID_Instr)
   );
+  
+  assign wInstr = wID_Instr; // Signal for autograder
+
 
   // ==========================================================================
   // 2. ID Stage (Instruction Decode / Register Read)
@@ -74,8 +82,11 @@ module RISCV_TOP (
     .oAluSrc2(wID_AluSrc2),
     .oRegWrite(wID_RegWrite),
     .oBranch(wID_Branch),
-    .oJump(wID_Jump)
+    .oJump(wID_Jump),
+    .oFinish(wID_Finish)
   );
+  wire wID_Finish;
+
 
   // Data for Register: RD address is from WB stage
   wire [4:0] wWB_Rd;
@@ -143,6 +154,7 @@ module RISCV_TOP (
     .i_rd_num(wID_Rd),
     .i_funct3(wID_Funct3),
     .i_funct7(wID_Funct7),
+    .iFinish(wID_Finish),
     // Outputs
     .oPcSrc(wEX_PcSrc),
     .oMemRead(wEX_MemRd),
@@ -163,8 +175,11 @@ module RISCV_TOP (
     .o_rs2_ptr(wEX_Rs2),
     .o_rd_ptr(wEX_Rd),
     .o_funct3(wEX_Funct3),
-    .o_funct7(wEX_Funct7)
+    .o_funct7(wEX_Funct7),
+    .oFinish(wEX_Finish)
   );
+  wire wEX_Finish;
+
 
   // ==========================================================================
   // 3. EX Stage (Execute)
@@ -175,8 +190,9 @@ module RISCV_TOP (
   wire wAluZero;
   
   // Forwarding Unit
-  wire wMEM_MemRd, wWB_MemRd;
-  wire [31:0] wMEM_AluResult;
+  wire [4:0] wMEM_Rd, wWB_Rd;
+  wire wMEM_RegWrite, wWB_RegWrite, wMEM_MemRd, wWB_MemRd;
+  wire [31:0] wMEM_AluResult, wWB_FinalWriteData;
 
   ForwardingUnit forward_unit (
     .ID_EX_rs1(wEX_Rs1),
@@ -188,8 +204,10 @@ module RISCV_TOP (
     .EX_MEM_rs2(wEX_Rs2), // Passing current RS2 for store-after-load forwarding
     .MEM_WB_MemRead(wWB_MemRd),
     .ForwardA(wForwardA),
-    .ForwardB(wForwardB)
+    .ForwardB(wForwardB),
+    .ForwardMem(wForwardMem)
   );
+  wire wForwardMem; // Note: This could be used for Store-after-Load forwarding
 
   // Select between RS1 data and forwarded values
   // Forwarding logic: 2'b10 = EX_MEM result, 2'b01 = WB result
@@ -239,10 +257,15 @@ module RISCV_TOP (
     .iPc(wEX_PC),
     .iRs1(wAluSrcA_raw),
     .iPcSrc(wEX_PcSrc),
-    .oPc(wNextPC)
+    .oPc(wEX_BranchTarget)
   );
+  wire [31:0] wEX_BranchTarget;
   
   assign wBranchTaken = (wEX_Branch && wAluZero) || wEX_Jump;
+  
+  // PC Update Logic: Normal = PC + 4, Branch/Jump = BranchTarget
+  assign wActualNextPC = (wBranchTaken) ? wEX_BranchTarget : (wIF_PC + 32'd4);
+
 
   // ==========================================================================
   // Pipeline Register: EX/MEM
@@ -269,6 +292,7 @@ module RISCV_TOP (
     .i_funct3(wEX_Funct3),
     .i_rd_num(wEX_Rd),
     .i_base_pc(wEX_PC + 4),
+    .iFinish(wEX_Finish),
     .oMemRead(wMEM_MemRd),
     .oMemWrite(wMEM_MemWr),
     .oMemToReg(wMEM_MemtoReg),
@@ -276,18 +300,25 @@ module RISCV_TOP (
     .oLui(wMEM_Lui),
     .o_imm(wMEM_Imm),
     .o_ALU_result(wMEM_AluResult),
+    .o_zero(wMEM_Zero),
+    .o_offset(wMEM_Offset),
     .o_rs2_value(wMEM_Rs2Data),
     .o_funct3(wMEM_Funct3),
     .o_rd_num(wMEM_Rd),
     .o_base_pc(wMEM_PcPlus4),
-    .oJump(wMEM_Jump)
+    .oJump(wMEM_Jump),
+    .oBranch(wMEM_Branch),
+    .oFinish(wMEM_Finish)
   );
+  wire wMEM_Zero, wMEM_Branch, wMEM_Finish;
+
+  wire [31:0] wMEM_Offset;
 
   // ==========================================================================
   // 4. MEM Stage (Memory Access)
   // ==========================================================================
   wire [31:0] wMEM_ReadData;
-  DATA_MEMORY data_memory (
+  MEM_STAGE mem_stage (
     .iClk(iClk),
     .iRstN(iRstN),
     .iAddress(wMEM_AluResult),
@@ -297,6 +328,7 @@ module RISCV_TOP (
     .iMemRead(wMEM_MemRd),
     .oReadData(wMEM_ReadData)
   );
+
 
   // ==========================================================================
   // Pipeline Register: MEM/WB
@@ -316,6 +348,7 @@ module RISCV_TOP (
     .i_rd_num(wMEM_Rd),
     .i_imm(wMEM_Imm),
     .i_pc_plus_4(wMEM_PcPlus4),
+    .iFinish(wMEM_Finish),
     .oMemToReg(wWB_MemtoReg),
     .oRegWrite(wWB_RegWrite),
     .oJump(wWB_Jump),
@@ -324,8 +357,12 @@ module RISCV_TOP (
     .o_ALU_result(wWB_AluResult),
     .o_rd_num(wWB_Rd),
     .o_imm(wWB_Imm),
-    .o_pc_plus_4(wWB_PcPlus4)
+    .o_pc_plus_4(wWB_PcPlus4),
+    .oFinish(wWB_Finish)
   );
+  wire wWB_Finish;
+  assign oFinish = wWB_Finish;
+
 
   // ==========================================================================
   // 5. WB Stage (Write Back)

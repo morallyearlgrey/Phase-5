@@ -10,11 +10,12 @@ module CONTROL (
     output oAluSrc2,
     output oRegWrite,
     output oBranch,
-    output oJump
+    output oJump,
+    output oFinish
 );
 
 // Use assign and registers so we can use the 'always' loop.
-reg rLui, rPcSrc, rMemRd, rMemWr, rMemtoReg, rAluSrc1, rAluSrc2, rRegWrite, rBranch, rJump;
+reg rLui, rPcSrc, rMemRd, rMemWr, rMemtoReg, rAluSrc1, rAluSrc2, rRegWrite, rBranch, rJump, rFinish;
 reg [2:0] rAluOp;
 
 assign oLui      = rLui;
@@ -28,6 +29,8 @@ assign oAluSrc2  = rAluSrc2;
 assign oRegWrite = rRegWrite;
 assign oBranch   = rBranch;
 assign oJump     = rJump;
+assign oFinish   = rFinish;
+
 
 // Very similar logic to decoder. Map opcode -> flags.
 always @(*) begin
@@ -43,6 +46,7 @@ always @(*) begin
     rRegWrite = 0;
     rBranch   = 0;
     rJump     = 0;
+    rFinish   = 0;
 
     case (iOpcode)
 
@@ -112,6 +116,12 @@ always @(*) begin
             rAluSrc2  = 1;
             rAluOp = 3'b000;
         end
+
+        // SYSTEM (ebreak, ecall)
+        7'b1110011: begin
+            rFinish = 1;
+        end
+
 
         default: begin end
 

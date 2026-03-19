@@ -27,6 +27,7 @@ module ID_EX(
     input  wire [4:0]  i_rd_num,
     input  wire [2:0]  i_funct3,    // for ALU and MEM control
     input  wire [6:0]  i_funct7,    // for ALU control
+    input  wire        iFinish,
 
     // Outputs to EX stage
     output reg         oPcSrc,
@@ -49,7 +50,8 @@ module ID_EX(
     output reg [4:0]   o_rs2_ptr,
     output reg [4:0]   o_rd_ptr,
     output reg [2:0]   o_funct3,
-    output reg [6:0]   o_funct7
+    output reg [6:0]   o_funct7,
+    output reg         oFinish
 );
 
 always @(posedge clk) begin
@@ -76,6 +78,7 @@ always @(posedge clk) begin
         o_rd_ptr    <= 5'b00000;
         o_funct3    <= 3'b000;
         o_funct7    <= 7'b0000000;
+        oFinish     <= 1'b0;
     end
     else if (!stall) begin
         oPcSrc      <= iPcSrc;
@@ -99,6 +102,7 @@ always @(posedge clk) begin
         o_rd_ptr    <= i_rd_num;
         o_funct3    <= i_funct3;
         o_funct7    <= i_funct7;
+        oFinish     <= iFinish;
     end
 end
 
