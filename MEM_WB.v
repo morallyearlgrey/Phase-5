@@ -30,7 +30,7 @@ module MEM_WB(
     output reg         oFinish
 );
 
-always @(posedge clk) begin
+always @(posedge clk or posedge rst or negedge rst) begin
     if (rst) begin
         oMemToReg    <= 1'b0;
         oRegWrite    <= 1'b0;
