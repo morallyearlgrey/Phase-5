@@ -11,17 +11,20 @@ module IF_ID(
     // Outputs to ID stage
     output reg  [31:0] o_PC,
     output reg  [31:0] o_instruction
-);
+  );
 
-always @(posedge clk) begin
-    if (rst || flush) begin
-        o_PC          <= 32'b0;
-        o_instruction <= 32'b0;
+  always @(posedge clk)
+  begin
+    if (rst || flush)
+    begin
+      o_PC          <= 32'b0;
+      o_instruction <= 32'h00000013; // NOP (addi x0, x0, 0)
     end
-    else if (!stall) begin
-        o_PC          <= i_PC;
-        o_instruction <= i_instruction;
+    else if (!stall)
+    begin
+      o_PC          <= i_PC;
+      o_instruction <= i_instruction;
     end
-end
+  end
 
 endmodule

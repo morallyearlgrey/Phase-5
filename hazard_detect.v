@@ -33,10 +33,11 @@
 */
 
 module hazard_detect(
-    input wire iIDExMemRead, // true iff instruction in EX is load type
+    input wire iIDExMemRead,       // true iff instruction in EX is load type
     input wire [4:0] iIDExRegisterRd, 
     input wire [4:0] iIFIdRegisterRs1, 
-    input wire [4:0] iIFIdRegisterRs2, 
+    input wire [4:0] iIFIdRegisterRs2,
+    input wire iIFIdIsStore,       // true if the IF/ID instruction is a store (sw/sh/sb)
     output reg oPCWrite,
     output reg oIFIDWrite,
     output reg ID_EX_Flush // 1 -> stall (for bubble), 0 -> continue
@@ -44,7 +45,14 @@ module hazard_detect(
 
     always @(*) begin
         // Check for Load-Use Hazard
-        if (iIDExMemRead && (iIDExRegisterRd != 0) && ((iIDExRegisterRd == iIFIdRegisterRs1) || (iIDExRegisterRd == iIFIdRegisterRs2))) begin
+        // A stall is needed when:
+        //   - The instruction in EX is a load (MemRead=1)
+        //   - That load's destination register matches rs1 OR rs2 of the next instruction
+        //   - EXCEPTION: if the next instruction is a STORE, don't stall for rs2
+        //     (the store's rs2 = data to write, handled by MEM-to-WB forwarding)
+        if (iIDExMemRead && (iIDExRegisterRd != 0) &&
+            ((iIDExRegisterRd == iIFIdRegisterRs1) ||
+             (!iIFIdIsStore && iIDExRegisterRd == iIFIdRegisterRs2))) begin
             // stall!! insert bubbles!!!
             oPCWrite = 1'b0;
             oIFIDWrite = 1'b0;

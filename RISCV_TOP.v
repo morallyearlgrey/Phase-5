@@ -20,7 +20,6 @@ module RISCV_TOP (
   end
 
   assign wIF_PC = rPC;
-  assign wPc    = wIF_PC; // Signal for autograder
 
   INSTRUCTION_MEMORY instr_mem (
     .iRdAddr(wIF_PC),
@@ -44,7 +43,8 @@ module RISCV_TOP (
     .o_instruction(wID_Instr)
   );
   
-  assign wInstr = wID_Instr; // Signal for autograder
+  assign wPc    = wID_PC;    // Signal for autograder (IF/ID register PC output)
+  assign wInstr = wID_Instr; // Signal for autograder (IF/ID register Instr output)
 
 
   // ==========================================================================
@@ -115,6 +115,7 @@ module RISCV_TOP (
     .iIDExRegisterRd(wEX_Rd),
     .iIFIdRegisterRs1(wID_Rs1),
     .iIFIdRegisterRs2(wID_Rs2),
+    .iIFIdIsStore(wID_MemWr),   // Don't stall rs2 for stores (data forwarded separately)
     .oPCWrite(wPCWrite),
     .oIFIDWrite(wIFIDWrite),
     .ID_EX_Flush(wIDEXFlush)
