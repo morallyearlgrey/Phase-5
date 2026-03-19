@@ -265,7 +265,8 @@ module RISCV_TOP (
   assign wBranchTaken = (wEX_Branch && wAluZero) || wEX_Jump;
   
   // PC Update Logic: Normal = PC + 4, Branch/Jump = BranchTarget
-  assign wActualNextPC = (wBranchTaken) ? wEX_BranchTarget : (wIF_PC + 32'd4);
+    assign wActualNextPC = (wBranchTaken) ? wEX_BranchTarget : (~wPCWrite) ? wIF_PC : (wIF_PC + 32'd4); // Keep PC the same if stalling
+                                         
 
 
   // ==========================================================================
