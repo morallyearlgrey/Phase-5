@@ -17,7 +17,7 @@ module EX_MEM(
     input  wire        i_zero,         // branch condition
     input  wire [31:0] i_offset,       // immediate or offset for PC update
     input  wire [31:0] i_rs2_value,    // store data
-    input wire [4:0] i_rs2_ptr,
+    input  wire [4:0]  i_rs2_ptr,
     input  wire [2:0]  i_funct3,
     input  wire [4:0]  i_rd_num,
     input  wire [31:0] i_base_pc,      // PC or rs1, already selected in EX

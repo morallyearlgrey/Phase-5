@@ -274,10 +274,12 @@ module RISCV_TOP (
   wire wMEM_MemWr, wMEM_MemtoReg, wMEM_Jump, wMEM_Lui;
   wire [31:0] wMEM_Rs2Data, wMEM_PcPlus4, wMEM_Imm;
   wire [2:0] wMEM_Funct3;
+  wire [4:0] wMEM_Rs2Ptr;
 
   EX_MEM reg_ex_mem (
     .clk(iClk),
     .rst(~iRstN),
+    .i_rs2_ptr(wEX_Rs2),
     .iMemRead(wEX_MemRd),
     .iMemWrite(wEX_MemWr),
     .iMemToReg(wEX_MemtoReg),
@@ -304,6 +306,7 @@ module RISCV_TOP (
     .o_zero(wMEM_Zero),
     .o_offset(wMEM_Offset),
     .o_rs2_value(wMEM_Rs2Data),
+    .o_rs2_ptr(wMEM_Rs2Ptr),
     .o_funct3(wMEM_Funct3),
     .o_rd_num(wMEM_Rd),
     .o_base_pc(wMEM_PcPlus4),
@@ -344,6 +347,7 @@ module RISCV_TOP (
     .iRegWrite(wMEM_RegWrite),
     .iJump(wMEM_Jump),
     .iLui(wMEM_Lui),
+    .iMemRead(wMEM_MemRd),
     .i_mem_data(wMEM_ReadData),
     .i_ALU_result(wMEM_AluResult),
     .i_rd_num(wMEM_Rd),
@@ -354,6 +358,7 @@ module RISCV_TOP (
     .oRegWrite(wWB_RegWrite),
     .oJump(wWB_Jump),
     .oLui(wWB_Lui),
+    .oMemRead(wWB_MemRd),
     .o_mem_data(wWB_MemData),
     .o_ALU_result(wWB_AluResult),
     .o_rd_num(wWB_Rd),
