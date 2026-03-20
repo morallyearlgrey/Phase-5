@@ -36,22 +36,25 @@ module hazard_detect(
     input wire iIDExMemRead, // true iff instruction in EX is load type
     input wire [4:0] iIDExRegisterRd, 
     input wire [4:0] iIFIdRegisterRs1, 
-    input wire [4:0] iIFIdRegisterRs2, 
+    input wire [4:0] iIFIdRegisterRs2,
+    input wire iIFIdIsStore, // true iff instruction in IF/ID is a store (sw/sh/sb)
     output reg oPCWrite,
     output reg oIFIDWrite,
     output reg ID_EX_Flush // 1 -> stall (for bubble), 0 -> continue
 );
 
     always @(*) begin
-        // Check for Load-Use Hazard
-        if (iIDExMemRead && (iIDExRegisterRd != 0) && ((iIDExRegisterRd == iIFIdRegisterRs1) || (iIDExRegisterRd == iIFIdRegisterRs2))) begin
-            // stall!! insert bubbles!!!
-            oPCWrite = 1'b0;
+        // Load-Use Hazard: stall if lw in EX and next instruction needs the result.
+        // For stores, the rs2 (store data) does NOT need to be ready until MEM stage,
+        // so MEM->MEM forwarding handles it — only stall on rs1 (address) match.
+        if (iIDExMemRead && (iIDExRegisterRd != 0) &&
+            ((iIDExRegisterRd == iIFIdRegisterRs1) ||
+             (!iIFIdIsStore && iIDExRegisterRd == iIFIdRegisterRs2))) begin
+            oPCWrite   = 1'b0;
             oIFIDWrite = 1'b0;
-            ID_EX_Flush = 1'b1; // trigger the flush signal
+            ID_EX_Flush = 1'b1;
         end else begin
-            // normal otherwise :3
-            oPCWrite = 1'b1;
+            oPCWrite   = 1'b1;
             oIFIDWrite = 1'b1;
             ID_EX_Flush = 1'b0; 
         end

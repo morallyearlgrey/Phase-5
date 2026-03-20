@@ -115,6 +115,7 @@ module RISCV_TOP (
     .iIDExRegisterRd(wEX_Rd),
     .iIFIdRegisterRs1(wID_Rs1),
     .iIFIdRegisterRs2(wID_Rs2),
+    .iIFIdIsStore(wID_MemWr),
     .oPCWrite(wPCWrite),
     .oIFIDWrite(wIFIDWrite),
     .ID_EX_Flush(wIDEXFlush)
