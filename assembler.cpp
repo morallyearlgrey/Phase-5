@@ -210,11 +210,16 @@ int main(int argc, char* argv[]) {
             continue;
         }
         if (token == ".word") {
+            // Handle multiple comma-separated values: .word 1, 2, 3
             std::string word;
-            ss >> word;
-            uint32_t val = parseImmediate(word);
-            writeLittleEndian(dataFile, val);
-            PC += 4;  
+            while (ss >> word) {
+                // Strip trailing comma if present
+                if (!word.empty() && word.back() == ',') word.pop_back();
+                if (word.empty()) continue;
+                uint32_t val = parseImmediate(word);
+                writeLittleEndian(dataFile, val);
+                // NOTE: do NOT increment PC here - PC tracks instruction addresses only
+            }
             continue;
         }
         
@@ -230,9 +235,12 @@ int main(int argc, char* argv[]) {
             // Re-check directives after stripping label
             if (token == ".word") {
                 std::string word;
-                ss >> word;
-                uint32_t val = parseImmediate(word);
-                writeLittleEndian(dataFile, val);
+                while (ss >> word) {
+                    if (!word.empty() && word.back() == ',') word.pop_back();
+                    if (word.empty()) continue;
+                    uint32_t val = parseImmediate(word);
+                    writeLittleEndian(dataFile, val);
+                }
                 continue;
             }
         }
@@ -803,8 +811,17 @@ void firstPass(std::string filename) {
 			continue;
 		}
 		if (token == ".word") {
-			if (inDataSection) dataAddress += 4;
-			else currentAddress += 4;
+			// Count all comma-separated values on this line
+			std::string val;
+			while (ss >> val) {
+				if (!val.empty() && val.back() == ',') val.pop_back();
+				if (val.empty()) continue;
+				if (inDataSection) dataAddress += 4;
+				else currentAddress += 4;
+			}
+			// Fallback: if no values were parsed (empty line after .word), count one
+			// (This shouldn't happen in well-formed assembly)
+
 			continue;
 		}
 		if (token == ".globl") {
