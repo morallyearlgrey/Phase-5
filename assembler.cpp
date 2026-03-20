@@ -227,6 +227,14 @@ int main(int argc, char* argv[]) {
             } else {
                 continue;
             }
+            // Re-check directives after stripping label
+            if (token == ".word") {
+                std::string word;
+                ss >> word;
+                uint32_t val = parseImmediate(word);
+                writeLittleEndian(dataFile, val);
+                continue;
+            }
         }
 
         const Instruction *instruction = getInstructions(token);
@@ -244,12 +252,16 @@ int main(int argc, char* argv[]) {
                 // i
                 // checks to see which i type to do
             case InstructionType::I:
-                if (instruction->name == "addi" || instruction->name == "slti" || instruction->name == "sltiu" || instruction->name == "xori" || instruction->name == "ori"|| instruction->name == "andi" || instruction->name == "slli" || instruction->name == "srli" || instruction->name == "srai") {
+                if (instruction->name == "ebreak") {
+                    // ebreak = 000000000001_00000_000_00000_1110011
+                    label = std::string("00000000000100000000000001110011");
+                } else if (instruction->name == "ecall") {
+                    // ecall  = 000000000000_00000_000_00000_1110011
+                    label = std::string("00000000000000000000000001110011");
+                } else if (instruction->name == "addi" || instruction->name == "slti" || instruction->name == "sltiu" || instruction->name == "xori" || instruction->name == "ori"|| instruction->name == "andi" || instruction->name == "slli" || instruction->name == "srli" || instruction->name == "srai") {
                     label = convert_IType_Arithmetic_Imm_Shamt(cleanLine, instruction);
-
                 } else if(instruction->name == "lb" || instruction->name == "lh" || instruction->name == "lw" || instruction->name == "lbu" || instruction->name == "lhu" || instruction->name == "jalr") {
                     label = convert_IType_Load_Jump(cleanLine, instruction);
-
                 }
                 break;
 
@@ -306,7 +318,8 @@ int main(int argc, char* argv[]) {
 
   }
 
-  writeLittleEndian(dataFile, 0x00100073);
+  // Note: ebreak in the assembly file encodes correctly via the switch case above.
+  // Do NOT append an extra ebreak here.
   
   // close
   dataFile.close();
@@ -756,7 +769,9 @@ void firstPass(std::string filename) {
 	}
 
 	std::string line;
-	currentAddress = 0x0; 
+	currentAddress = 0x0;
+	bool inDataSection = false;
+	uint32_t dataAddress = 0x0;
 
 	while (std::getline(inputFile, line)) {
 		size_t commentPos = line.find('#');
@@ -770,27 +785,33 @@ void firstPass(std::string filename) {
 
 		if (token.back() == ':') {
 			std::string labelName = token.substr(0, token.length() - 1);
-		    SymbolTable[labelName] = currentAddress;
-			
+			if (inDataSection) {
+			    SymbolTable[labelName] = dataAddress;
+			} else {
+			    SymbolTable[labelName] = currentAddress;
+			}
 			if (!(ss >> token)) continue; 
 		}
 
 		if (token == ".data") {
+			inDataSection = true;
 			continue;
 		}
 		if (token == ".text") {
-            currentAddress=0x0;
+			inDataSection = false;
+            currentAddress = 0x0;
 			continue;
 		}
 		if (token == ".word") {
-			currentAddress += 4;
+			if (inDataSection) dataAddress += 4;
+			else currentAddress += 4;
 			continue;
 		}
 		if (token == ".globl") {
 			continue;
 		}
 		
-		if (getInstructions(token) != nullptr) {
+		if (!inDataSection && getInstructions(token) != nullptr) {
 			currentAddress += 4;
 		}
 	}
