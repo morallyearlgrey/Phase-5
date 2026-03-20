@@ -54,8 +54,8 @@ module ID_EX(
     output reg         oFinish
 );
 
-always @(posedge clk or negedge iRstN) begin
-    if (rst || flush) begin
+always @(posedge clk or posedge rst) begin
+    if (~rst || flush) begin
         // Bubble or reset
         oPcSrc      <= 1'b0;
         oMemRead    <= 1'b0;

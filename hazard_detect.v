@@ -44,7 +44,7 @@ module hazard_detect(
 
     always @(*) begin
         // Check for Load-Use Hazard
-        if (iIDExMemRead && (iIDExRegisterRd != 0) && ((iIDExRegisterRd == iIFIdRegisterRs1) || (iIDExRegisterRd == iIFIdRegisterRs2))) begin
+        if (iIDExMemRead && (iIDExRegisterRd != 5'd0) && ((iIDExRegisterRd == iIFIdRegisterRs1) || (iIDExRegisterRd == iIFIdRegisterRs2))) begin
             // stall!! insert bubbles!!!
             oPCWrite = 1'b0;
             oIFIDWrite = 1'b0;

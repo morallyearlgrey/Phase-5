@@ -207,6 +207,7 @@ int main(int argc, char* argv[]) {
         if (token == ".text") {
             inData = false;
             inText = true;
+            PC = 0;              // <<< reset PC to match firstPass currentAddress
             continue;
         }
         if (token == ".word") {
@@ -214,7 +215,7 @@ int main(int argc, char* argv[]) {
             ss >> word;
             uint32_t val = parseImmediate(word);
             writeLittleEndian(dataFile, val);
-            PC += 4;  
+            // PC += 4;  
             continue;
         }
         
@@ -306,7 +307,7 @@ int main(int argc, char* argv[]) {
 
   }
 
-  writeLittleEndian(dataFile, 0x00100073);
+  writeLittleEndian(instrFile, 0x00100073);
   
   // close
   dataFile.close();
@@ -325,22 +326,22 @@ void writeLittleEndian(std::ofstream& file, uint32_t val) {
 
 }
 
-// helpful map, was used for i type func orig when merging
-std::string registerToBinary(const std::string registerName) {
-  std::unordered_map<std::string, int> registerMap = {
-      {"zero", 0}, {"ra", 1},  {"sp", 2},  {"gp", 3},  {"tp", 4},  {"t0", 5},
-      {"t1", 6},   {"t2", 7},  {"s0", 8},
-      {"s1", 9},   {"a0", 10}, {"a1", 11}, {"a2", 12}, {"a3", 13}, {"a4", 14},
-      {"a5", 15},  {"a6", 16}, {"a7", 17}, {"s2", 18}, {"s3", 19}, {"s4", 20},
-      {"s5", 21},  {"s6", 22}, {"s7", 23}, {"s8", 24}, {"s9", 25}, {"s10", 26},
-      {"s11", 27}, {"t3", 28}, {"t4", 29}, {"t5", 30}, {"t6", 31},
+// // helpful map, was used for i type func orig when merging
+// std::string registerToBinary(const std::string registerName) {
+//   std::unordered_map<std::string, int> registerMap = {
+//       {"zero", 0}, {"ra", 1},  {"sp", 2},  {"gp", 3},  {"tp", 4},  {"t0", 5},
+//       {"t1", 6},   {"t2", 7},  {"s0", 8},
+//       {"s1", 9},   {"a0", 10}, {"a1", 11}, {"a2", 12}, {"a3", 13}, {"a4", 14},
+//       {"a5", 15},  {"a6", 16}, {"a7", 17}, {"s2", 18}, {"s3", 19}, {"s4", 20},
+//       {"s5", 21},  {"s6", 22}, {"s7", 23}, {"s8", 24}, {"s9", 25}, {"s10", 26},
+//       {"s11", 27}, {"t3", 28}, {"t4", 29}, {"t5", 30}, {"t6", 31},
 
-  };
+//   };
 
-  // basically finds in map and converts to binary
-  int binary = registerMap[registerName];
-  return std::bitset<5>(binary).to_string();
-}
+//   // basically finds in map and converts to binary
+//   int binary = registerMap[registerName];
+//   return std::bitset<5>(binary).to_string();
+// }
 
  // r = funct 7 + rs2 + rs1 + funct3 + rd + opcode
 std::string processRType(std::string line, const Instruction *instruction) {
@@ -371,9 +372,13 @@ std::string processRType(std::string line, const Instruction *instruction) {
   if (!rs2.empty() && rs2.back() == ',')
     rs2.pop_back();
 
-  std::string binary_rd = registerToBinary(rd);
-  std::string binary_rs1 = registerToBinary(rs1);
-  std::string binary_rs2 = registerToBinary(rs2);
+  const Register* rd_reg  = getRegister(rd);
+  const Register* rs1_reg = getRegister(rs1);
+  const Register* rs2_reg = getRegister(rs2);
+
+  std::string binary_rd  = std::bitset<5>(rd_reg->address).to_string();
+  std::string binary_rs1 = std::bitset<5>(rs1_reg->address).to_string();
+  std::string binary_rs2 = std::bitset<5>(rs2_reg->address).to_string();
 
   // turn the functs into binary using bitset
   std::string binary_funct7 = std::bitset<7>(instruction->funct7).to_string();
