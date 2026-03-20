@@ -210,14 +210,21 @@ module RISCV_TOP (
   );
   wire wForwardMem; // Note: This could be used for Store-after-Load forwarding
 
+  // EX->EX forwarding must use the same value WB will eventually write,
+  // not just the raw ALU result. For LUI the correct value is the immediate;
+  // for JAL/JALR the correct value is PC+4 (the link address).
+  wire [31:0] wMEM_ForwardData = wMEM_Lui  ? wMEM_Imm     :
+                                  wMEM_Jump ? wMEM_PcPlus4 :
+                                              wMEM_AluResult;
+
   // Select between RS1 data and forwarded values
   // Forwarding logic: 2'b10 = EX_MEM result, 2'b01 = WB result
   wire [31:0] wAluSrcA_raw, wAluSrcB_raw;
-  assign wAluSrcA_raw = (wForwardA == 2'b10) ? wMEM_AluResult :
+  assign wAluSrcA_raw = (wForwardA == 2'b10) ? wMEM_ForwardData :
                         (wForwardA == 2'b01) ? wWB_FinalWriteData :
                         wEX_Rs1Data;
 
-  assign wAluSrcB_raw = (wForwardB == 2'b10) ? wMEM_AluResult :
+  assign wAluSrcB_raw = (wForwardB == 2'b10) ? wMEM_ForwardData :
                         (wForwardB == 2'b01) ? wWB_FinalWriteData :
                         wEX_Rs2Data;
 
