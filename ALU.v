@@ -1,14 +1,14 @@
 // /* verilator lint_off DECLFILENAME */
 
 // ALU module definition
-// `include "AND.v"
-// `include "barrel_shifter.v"
-// `include "comparator.v"
-// `include "LCA.v"
-// `include "OR.v"
-// `include "slt.v"
-// `include "sltu.v"
-// `include "XOR.v"
+`include "AND.v"
+`include "barrel_shifter.v"
+`include "comparator.v"
+`include "LCA.v"
+`include "OR.v"
+`include "slt.v"
+`include "sltu.v"
+`include "XOR.v"
 
 
 // ALU module definition

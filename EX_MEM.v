@@ -17,7 +17,6 @@ module EX_MEM(
     input  wire        i_zero,         // branch condition
     input  wire [31:0] i_offset,       // immediate or offset for PC update
     input  wire [31:0] i_rs2_value,    // store data
-    input wire [4:0] i_rs2_ptr,
     input  wire [2:0]  i_funct3,
     input  wire [4:0]  i_rd_num,
     input  wire [31:0] i_base_pc,      // PC or rs1, already selected in EX
@@ -37,7 +36,6 @@ module EX_MEM(
     output reg         o_zero,
     output reg [31:0]  o_offset,
     output reg [31:0]  o_rs2_value,
-    output reg [4:0]   o_rs2_ptr,
     output reg [2:0]   o_funct3,
     output reg [4:0]   o_rd_num,
     output reg [31:0]  o_base_pc,
@@ -45,7 +43,7 @@ module EX_MEM(
 );
 
 
-always @(posedge clk or posedge rst) begin
+always @(posedge clk) begin
     if (rst) begin
         oMemRead     <= 1'b0;
         oMemWrite    <= 1'b0;
@@ -59,11 +57,9 @@ always @(posedge clk or posedge rst) begin
         o_zero       <= 1'b0;
         o_offset     <= 32'b0;
         o_rs2_value  <= 32'b0;
-        o_rs2_ptr    <= 5'b00000;
         o_funct3     <= 3'b000;
         o_rd_num     <= 5'b00000;
         o_base_pc    <= 32'b0;
-        oBranch     <= 1'b0;
         oFinish      <= 1'b0;
     end
     else begin
@@ -80,7 +76,6 @@ always @(posedge clk or posedge rst) begin
         o_zero       <= i_zero;
         o_offset     <= i_offset;
         o_rs2_value  <= i_rs2_value;
-        o_rs2_ptr   <= i_rs2_ptr;
         o_funct3     <= i_funct3;
         o_rd_num     <= i_rd_num;
         o_base_pc    <= i_base_pc;

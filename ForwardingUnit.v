@@ -6,7 +6,6 @@ module ForwardingUnit (
     input [4:0] MEM_WB_rd, // dest reg for problem inst (two ahead) in wb (mem->ex problem)
     input EX_MEM_RegWrite, // indicates if reg can write
     input MEM_WB_RegWrite, // indicates if reg can write
-    input MEM_WB_MemToReg,
 
     // mem->mem
     input  [4:0] EX_MEM_rs2, // source, holds reg whose value being written
@@ -51,7 +50,7 @@ always @(*) begin
     end
     
     // forward mem, for reading newly loaded reg
-    if(MEM_WB_MemToReg && MEM_WB_rd!=5'd0 && EX_MEM_rs2==MEM_WB_rd) begin
+    if(MEM_WB_MemRead && MEM_WB_rd!=5'd0 && EX_MEM_rs2==MEM_WB_rd) begin
         ForwardMem = 1'b1;
     end
 

@@ -7,7 +7,6 @@ module MEM_WB(
     input  wire        iRegWrite,
     input  wire        iJump,
     input  wire        iLui,
-    input  wire        iMemRead,
 
     // Data signals
     input  wire [31:0] i_mem_data,
@@ -22,7 +21,6 @@ module MEM_WB(
     output reg         oRegWrite,
     output reg         oJump,
     output reg         oLui,
-    output reg         oMemRead,
 
     output reg [31:0]  o_mem_data,
     output reg [31:0]  o_ALU_result,
@@ -32,7 +30,7 @@ module MEM_WB(
     output reg         oFinish
 );
 
-always @(posedge clk or posedge rst) begin
+always @(posedge clk or negedge iRstN) begin
     if (rst) begin
         oMemToReg    <= 1'b0;
         oRegWrite    <= 1'b0;
@@ -45,14 +43,12 @@ always @(posedge clk or posedge rst) begin
         o_imm        <= 32'b0;
         o_pc_plus_4  <= 32'b0;
         oFinish      <= 1'b0;
-        oMemRead     <= 1'b0;
     end
     else begin
         oMemToReg    <= iMemToReg;
         oRegWrite    <= iRegWrite;
         oJump        <= iJump;
         oLui         <= iLui;
-        oMemRead     <= iMemRead;
 
         o_mem_data   <= i_mem_data;
         o_ALU_result <= i_ALU_result;

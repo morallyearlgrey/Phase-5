@@ -11,7 +11,6 @@ module INSTRUCTION_MEMORY (
 
     initial begin
         $readmemh("instr.txt", rInstrMem);
-        #1 $display("DEBUG: Memory Index 0 = %h", rInstrMem[0]);
     end
 
     // instr are 32 bits, read 4 bytes
