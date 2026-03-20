@@ -72,9 +72,17 @@ module REGISTER (
   // combinational logic
   // assign is for combinational logic, uses state buffers a lot
 
-  assign oRs1Data = (iRs1Addr==5'b00000) ? 32'h00000000 : registers[iRs1Addr];
-  assign oRs2Data = (iRs2Addr==5'b00000) ? 32'h00000000 : registers[iRs2Addr];
+  // Write-forwarding: if WB is writing to the same register being read this cycle,
+  // return the new write data directly instead of the (not-yet-updated) array value.
+  // This fixes the write-read same-cycle race where a load result committed to WB
+  // at the same posedge that the dependent instruction is in ID.
+  assign oRs1Data = (iRs1Addr == 5'b00000) ? 32'h00000000 :
+                    (iWriteEn && (iRdAddr != 5'b00000) && (iRdAddr == iRs1Addr)) ? iWriteData :
+                    registers[iRs1Addr];
+
+  assign oRs2Data = (iRs2Addr == 5'b00000) ? 32'h00000000 :
+                    (iWriteEn && (iRdAddr != 5'b00000) && (iRdAddr == iRs2Addr)) ? iWriteData :
+                    registers[iRs2Addr];
 
 
 endmodule
-

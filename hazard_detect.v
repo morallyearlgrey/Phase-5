@@ -37,6 +37,7 @@ module hazard_detect(
     input wire [4:0] iIDExRegisterRd, 
     input wire [4:0] iIFIdRegisterRs1, 
     input wire [4:0] iIFIdRegisterRs2, 
+    input wire iID_isStore,
     output reg oPCWrite,
     output reg oIFIDWrite,
     output reg ID_EX_Flush // 1 -> stall (for bubble), 0 -> continue
@@ -44,7 +45,7 @@ module hazard_detect(
 
     always @(*) begin
         // Check for Load-Use Hazard
-        if (iIDExMemRead && (iIDExRegisterRd != 0) && ((iIDExRegisterRd == iIFIdRegisterRs1) || (iIDExRegisterRd == iIFIdRegisterRs2))) begin
+        if (iIDExMemRead && (iIDExRegisterRd != 0) && ((iIDExRegisterRd == iIFIdRegisterRs1) || ((iIDExRegisterRd == iIFIdRegisterRs2) && !iID_isStore))) begin
             // stall!! insert bubbles!!!
             oPCWrite = 1'b0;
             oIFIDWrite = 1'b0;
