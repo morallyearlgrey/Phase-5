@@ -466,10 +466,18 @@ std::string convert_IType_Arithmetic_Imm_Shamt(std::string instructionInput, con
 	rs1 = std::bitset<5>(getRegister(rs1)->address).to_string();
 
     int immediateValue = parseImmediate(immshamt);
-    immshamt = std::bitset<12>(immediateValue & 0xFFF).to_string();
+
+    // For shift instructions (slli, srli, srai), the 12-bit imm field is
+    // funct7[6:0] | shamt[4:0]. srai has funct7=0x20, srli/slli have funct7=0x00.
+    uint32_t imm12val;
+    if (instruction->name == "srai" || instruction->name == "srli" || instruction->name == "slli") {
+        imm12val = (((uint32_t)instruction->funct7 << 5) | ((uint32_t)immediateValue & 0x1F)) & 0xFFF;
+    } else {
+        imm12val = (uint32_t)immediateValue & 0xFFF;
+    }
+    immshamt = std::bitset<12>(imm12val).to_string();
 
     // return
-
 	return (immshamt+rs1+std::bitset<3>((instruction->funct3) & 0xFFF).to_string()+rd+std::bitset<7>((instruction->opcode) & 0xFFF).to_string());
 }
 
@@ -498,30 +506,35 @@ std::string convert_IType_Load_Jump(std::string instructionInput, const Instruct
 
 
 	std::string offsetrs1 = instructionTokens[2];
+    std::string offsetStr, rs1;
 
-    // there's parentheses in there for the offsets and label stuff
-	std::string offsetStr = (offsetrs1.substr(0, offsetrs1.find('(')));
-	int offset = parseImmediate(offsetStr); // pass to func to deal with labels
+    if (offsetrs1.find('(') != std::string::npos) {
+        // Format: lw/jalr rd, offset(rs1)
+        offsetStr = offsetrs1.substr(0, offsetrs1.find('('));
+        int leftparenthesis  = offsetrs1.find('(');
+        int rightparenthesis = offsetrs1.find(')');
+        rs1 = offsetrs1.substr(leftparenthesis+1, rightparenthesis-leftparenthesis-1);
+    } else {
+        // Format: jalr rd, rs1, imm  (three separate operands)
+        if (!offsetrs1.empty() && offsetrs1.back() == ',') offsetrs1.pop_back();
+        rs1 = offsetrs1;
+        offsetStr = (instructionTokens.size() >= 4) ? instructionTokens[3] : "0";
+    }
 
+    int offset = parseImmediate(offsetStr);
     std::string imm = std::bitset<12>(offset & 0xFFF).to_string();
-    
-    // get rid of parentheses
-	int leftparenthesis = offsetrs1.find('(');
-	int rightparenthesis = offsetrs1.find(')');
-	std::string rs1 = offsetrs1.substr(leftparenthesis+1, rightparenthesis-leftparenthesis-1);
 
-    const Register* rd_reg = getRegister(rd);
+    const Register* rd_reg  = getRegister(rd);
     const Register* rs1_reg = getRegister(rs1);
-    
+
     // null check again
     if (rd_reg == nullptr || rs1_reg == nullptr) {
         return std::string(32, '0');
     }
 
     // convert to bits
-	rd = std::bitset<5>(getRegister(rd)->address).to_string();
-	rs1 = std::bitset<5>(getRegister(rs1)->address).to_string();
-
+	rd  = std::bitset<5>(rd_reg->address).to_string();
+	rs1 = std::bitset<5>(rs1_reg->address).to_string();
 
 	return (imm+rs1+std::bitset<3>(instruction->funct3).to_string()+rd+std::bitset<7>(instruction->opcode).to_string());
 }
